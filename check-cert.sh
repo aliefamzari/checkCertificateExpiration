@@ -9,47 +9,47 @@
 ####
 
 #### Global variables that can be change to your needs
-TARGET="your.hostname.com"  # Target host
-PORT=443 # Target host port
-RECIPIENT="youremail.com" # Target recipient
-DAYS=30 # Threshold days
-TMPPATH="/tmp" # Temp folder path
+target="your.hostname.com"  # target host
+port=443 # target host port
+recipient="youremail.com" # target recipient
+days=30 # Threshold days
+tmpPath="/tmp" # Temp folder path
 ####
-echo "Checking $TARGET certificate validity..."
+echo "Checking $target certificate validity..."
 echo 
 # Certificate information (Subject, Issuer, Expiration)
-CERTINFO=`openssl s_client -connect $TARGET:$PORT 2>/dev/null |openssl x509 -text |grep 'Subject:\|Issuer:\|Not After'`  
+certInfo=`openssl s_client -connect $target:$port 2>/dev/null |openssl x509 -text |grep 'Subject:\|Issuer:\|Not After'`  
 # Current date from epoch in seconds 
-CURRENTDATE=`date +%s` 
+currentDate=`date +%s` 
 # Converting certificate "Not After" date into epoch date format
-EXPIRATIONDATE=$(date -d "$(: |echo $CERTINFO |awk '{print $18,$19,$21}')" '+%s')
+expirationDate=$(date -d "$(: |echo $certInfo |awk '{print $18,$19,$21}')" '+%s')
 # Get the remaining days before expired 
-REMAININGDAYS=$((($EXPIRATIONDATE - $CURRENTDATE) / (24*3600)))
+remainingDays=$((($expirationDate - $currentDate) / (24*3600)))
 # Measuring current date + threshold days to get amber days
-AMBERDAYS=$(($CURRENTDATE + (86400*$DAYS)))
+amberDays=$(($currentDate + (86400*$days)))
 
 ## 1-Sending email to target recipient  if certificate will expire within the threshold days
-if [ $AMBERDAYS -gt $EXPIRATIONDATE ]; then
-	echo -e "WARNING - Certificate for $TARGET expires in $REMAININGDAYS days, on $(date -d @$EXPIRATIONDATE '+%d %B %Y').\n" > $TMPPATH/warningpayload.txt  # Outputting  warning certificate expiration message to a text file
-	echo $CERTINFO | sed 's/Not/\nNot/; s/Sub/\nSub/' >> $TMPPATH/warningpayload.txt  # Appending current certificate info to the same text file
-	mail -s "Certificate expiration warning for $TARGET" $RECIPIENT < $TMPPATH/warningpayload.txt # Sending message to recipient from the text file
+if [ $amberDays -gt $expirationDate ]; then
+	echo -e "WARNING - Certificate for $target expires in $remainingDays days, on $(date -d @$expirationDate '+%d %B %Y').\n" > $tmpPath/warningpayload.txt  # Outputting  warning certificate expiration message to a text file
+	echo $certInfo | sed 's/Not/\nNot/; s/Sub/\nSub/' >> $tmpPath/warningpayload.txt  # Appending current certificate info to the same text file
+	mail -s "Certificate expiration warning for $target" $recipient < $tmpPath/warningpayload.txt # Sending message to recipient from the text file
 	else
-	echo "OK - Certificate expires on $(date -d @$EXPIRATIONDATE '+%d %B %Y')"
+		echo "OK - Certificate expires on $(date -d @$expirationDate '+%d %B %Y')"
 fi
 ## 1
 
 # Housekeeping warningpayload.txt
-test -e $TMPPATH/warningpayload.txt && rm $TMPPATH/warningpayload.txt
+test -e $tmpPath/warningpayload.txt && rm $tmpPath/warningpayload.txt
 
 ## 2-Sending email to target recipient if certificate has expired. 
-if [ $CURRENTDATE -lt $EXPIRATIONDATE ]; then
+if [ $currentDate -lt $expirationDate ]; then
 	echo "Certificate valid"
 	else
-	echo -e "Certicate for $TARGET has expired.\n" > $TMPPATH/expiredpayload.txt 
-	echo $CERTINFO | sed 's/Not/\nNot/; s/Sub/\nSub/' >> $TMPPATH/expiredpayload.txt
-	mail -s "Your certificate for $TARGET has expired" $RECIPIENT < $TMPPATH/expiredpayload.txt
+		echo -e "Certicate for $target has expired.\n" > $tmpPath/expiredpayload.txt 
+		echo $certInfo | sed 's/Not/\nNot/; s/Sub/\nSub/' >> $tmpPath/expiredpayload.txt
+		mail -s "Your certificate for $target has expired" $recipient < $tmpPath/expiredpayload.txt
 fi
 ## 2
 
 # Housekeeping expiredpayload.txt
-test -e $TMPPATH/expiredpayload.txt && rm $TMPPATH/expiredpayload.txt
+test -e $tmpPath/expiredpayload.txt && rm $tmpPath/expiredpayload.txt
