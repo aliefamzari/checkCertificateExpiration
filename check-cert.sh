@@ -5,6 +5,7 @@
 	# Author: Alif Amzari Mohd Azamee
 	# Date: 19/12/2019
 	# Version: 1.0
+	# Job type: Cron
 	
 ####
 
